@@ -4,12 +4,8 @@ import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.*;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.stereotype.Component;
 
-import java.util.Locale;
-
-@Configuration
+//@Configuration
 public class PromotionUppercaseStream
 {
     @Bean
