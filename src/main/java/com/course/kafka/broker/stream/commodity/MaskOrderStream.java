@@ -21,11 +21,11 @@ public class MaskOrderStream
     {
         JsonSerde<OrderMessage> orderMessageJsonSerde = new JsonSerde<>(OrderMessage.class);
 
-        streamsBuilder.stream("t.commodity.order", Consumed.with(Serdes.String(), orderMessageJsonSerde))
-                      .mapValues(CommodityStreamUtil::maskCreditCardNumber)
-                      .to("t.commodity.order-masked", Produced.with(Serdes.String(), orderMessageJsonSerde));
+        KStream<String, OrderMessage> orderMessageStream = streamsBuilder.stream("t.commodity.order",
+                                                                                 Consumed.with(Serdes.String(), orderMessageJsonSerde));
+        orderMessageStream.mapValues(CommodityStreamUtil::maskCreditCardNumber)
+                          .to("t.commodity.order-masked", Produced.with(Serdes.String(), orderMessageJsonSerde));
 
-        return streamsBuilder.stream("t.commodity.order",
-                                     Consumed.with(Serdes.String(), orderMessageJsonSerde));
+        return orderMessageStream;
     }
 }
