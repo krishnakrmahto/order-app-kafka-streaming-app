@@ -7,36 +7,62 @@ import com.course.kafka.util.CommodityStreamUtil;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
-import org.apache.kafka.streams.kstream.Consumed;
-import org.apache.kafka.streams.kstream.KStream;
-import org.apache.kafka.streams.kstream.Produced;
+import org.apache.kafka.streams.kstream.*;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.support.serializer.JsonSerde;
 
-//@Configuration
-public class CommodityStreamOne
-{
+import java.util.Base64;
 
+@Configuration
+public class CommodityStreamTwo
+{
     @Bean
-    public KStream<String, OrderMessage> kStreamOrderMessageOneStream(StreamsBuilder streamsBuilder)
+    @SuppressWarnings("unchecked")
+    public KStream<String, OrderMessage> kStreamOrderMessageTwo(StreamsBuilder streamsBuilder)
     {
         Serde<String> stringSerde = Serdes.String();
 
         KStream<String, OrderMessage> sourceStream = streamsBuilder.stream(CommodityStreamUtil.TOPIC_COMMODITY_ORDER,
-                                                                           Consumed.with(stringSerde, new JsonSerde<>(OrderMessage.class)));
+                                                                     Consumed.with(stringSerde, new JsonSerde<>(OrderMessage.class)));
 
         KStream<String, OrderMessage> maskedOrderStream = sourceStream.mapValues(CommodityStreamUtil::maskCreditCardNumber);
 
-        maskedOrderStream.mapValues(this::toOrderMessageForPattern)
-                         .to("t.commodity.pattern-one", Produced.with(stringSerde, new JsonSerde<>(OrderMessageForPattern.class)));
+        KStream<String, OrderMessageForPattern>[] patternStreamBranches = maskedOrderStream.mapValues(this::toOrderMessageForPattern)
+                                                                                           .branch(getPlasticPredicate(), (key, value) -> true);
+
+        KStream<String, OrderMessageForPattern> plasticOrderStream = patternStreamBranches[0];
+        KStream<String, OrderMessageForPattern> nonPlasticOrderStream = patternStreamBranches[1];
+
+        plasticOrderStream.to("t.commodity.pattern-two.plastic",
+                              Produced.with(stringSerde, new JsonSerde<>(OrderMessageForPattern.class)));
+        nonPlasticOrderStream.to("t.commodity.pattern-two.notplastic",
+                                 Produced.with(stringSerde, new JsonSerde<>(OrderMessageForPattern.class)));
 
         maskedOrderStream.filter((key, value) -> value.getQuantity() > CommodityStreamUtil.LARGE_QUANTITY_MIN_VALUE)
+                         .filter(getExpensivePredicate())
                          .mapValues(this::toOrderMessageForReward)
-                         .to("t.commodity.reward-one", Produced.with(stringSerde, new JsonSerde<>(OrderMessageForReward.class)));
+                         .to("t.commodity.reward-two", Produced.with(stringSerde, new JsonSerde<>(OrderMessageForReward.class)));
 
-        maskedOrderStream.to("t.commodity.storage-one", Produced.with(stringSerde, new JsonSerde<>(OrderMessage.class)));
+        maskedOrderStream.selectKey(getBase64KeyValueMapper())
+                         .to("t.commodity.storage-two", Produced.with(stringSerde, new JsonSerde<>(OrderMessage.class)));
 
         return sourceStream;
+    }
+
+    private KeyValueMapper<String, OrderMessage, String> getBase64KeyValueMapper()
+    {
+        return (key, value) -> Base64.getEncoder().encodeToString(value.getOrderNumber().getBytes());
+    }
+
+    private Predicate<String, OrderMessage> getExpensivePredicate()
+    {
+        return (key, value) -> value.getPrice() > 10;
+    }
+
+    private Predicate<String, OrderMessageForPattern> getPlasticPredicate()
+    {
+        return (key, value) -> value.getItemName().startsWith("Plastic");
     }
 
     private OrderMessageForPattern toOrderMessageForPattern(OrderMessage orderMessage)
