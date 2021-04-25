@@ -31,8 +31,8 @@ public class FeedbackStreamFive
         KStream<String, String> positiveFeedbackWordStream = feedbackWordStream[0];
         KStream<String, String> negativeFeedbackWordStream = feedbackWordStream[1];
 
-        positiveFeedbackWordStream.through("t.commodity.feedback-five-good").groupByKey().count().toStream().to("t.commodity.feedback-four-good-count");
-        negativeFeedbackWordStream.through("t.commodity.feedback-five-bad").groupByKey().count().toStream().to("t.commodity.feedback-four-good-count");
+        positiveFeedbackWordStream.through("t.commodity.feedback-five-good").groupByKey().count().toStream().to("t.commodity.feedback-five-good-count");
+        negativeFeedbackWordStream.through("t.commodity.feedback-five-bad").groupByKey().count().toStream().to("t.commodity.feedback-five-bad-count");
         
         return sourceStream;
     }
