@@ -9,13 +9,14 @@ import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KeyValueMapper;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.support.serializer.JsonSerde;
 
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
-//@Configuration
-public class FeedbackStreamFive
+@Configuration
+public class FeedbackStreamSix
 {
     @Bean
     @SuppressWarnings("unchecked")
@@ -30,9 +31,12 @@ public class FeedbackStreamFive
         KStream<String, String> positiveFeedbackWordStream = feedbackWordStream[0];
         KStream<String, String> negativeFeedbackWordStream = feedbackWordStream[1];
 
-        positiveFeedbackWordStream.through("t.commodity.feedback-five-good").groupByKey().count().toStream().to("t.commodity.feedback-five-good-count");
-        negativeFeedbackWordStream.through("t.commodity.feedback-five-bad").groupByKey().count().toStream().to("t.commodity.feedback-five-bad-count");
-        
+        positiveFeedbackWordStream.through("t.commodity.feedback-six-good").groupByKey().count().toStream().to("t.commodity.feedback-six-good-count");
+        negativeFeedbackWordStream.through("t.commodity.feedback-six-bad").groupByKey().count().toStream().to("t.commodity.feedback-six-bad-count");
+
+        positiveFeedbackWordStream.groupBy((key, value) -> value).count().toStream().to("t.commodity.feedback-six-good-count-word");
+        negativeFeedbackWordStream.groupBy((key, value) -> value).count().toStream().to("t.commodity.feedback-six-bad-count-word");
+
         return sourceStream;
     }
 
