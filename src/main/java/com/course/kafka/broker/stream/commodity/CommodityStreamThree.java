@@ -19,8 +19,7 @@ import java.util.Base64;
 public class CommodityStreamThree
 {
     @Bean
-    @SuppressWarnings("unchecked")
-    public KStream<String, OrderMessage> kStreamOrderMessageTwo(StreamsBuilder streamsBuilder)
+    public KStream<String, OrderMessage> kStreamOrderMessageThree(StreamsBuilder streamsBuilder)
     {
         Serde<String> stringSerde = Serdes.String();
 

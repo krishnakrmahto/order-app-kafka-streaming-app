@@ -9,12 +9,11 @@ import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.*;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.support.serializer.JsonSerde;
 
 import java.util.Base64;
 
-@Configuration
+//@Configuration
 public class CommodityStreamTwo
 {
     @Bean
