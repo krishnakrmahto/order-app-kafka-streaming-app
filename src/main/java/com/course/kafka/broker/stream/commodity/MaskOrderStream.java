@@ -1,7 +1,7 @@
 package com.course.kafka.broker.stream.commodity;
 
 import com.course.kafka.broker.message.OrderMessage;
-import com.course.kafka.util.CommodityStreamUtil;
+import com.course.kafka.util.Util;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
@@ -22,7 +22,7 @@ public class MaskOrderStream
 
         KStream<String, OrderMessage> orderMessageStream = streamsBuilder.stream("t.commodity.order",
                                                                                  Consumed.with(Serdes.String(), orderMessageJsonSerde));
-        orderMessageStream.mapValues(CommodityStreamUtil::maskCreditCardNumber)
+        orderMessageStream.mapValues(Util::maskCreditCardNumber)
                           .to("t.commodity.order-masked", Produced.with(Serdes.String(), orderMessageJsonSerde));
 
         return orderMessageStream;

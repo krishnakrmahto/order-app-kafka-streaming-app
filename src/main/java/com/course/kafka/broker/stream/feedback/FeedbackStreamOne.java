@@ -1,7 +1,7 @@
 package com.course.kafka.broker.stream.feedback;
 
 import com.course.kafka.broker.message.FeedbackMessage;
-import com.course.kafka.util.CommodityStreamUtil;
+import com.course.kafka.util.Util;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.Consumed;
@@ -34,7 +34,7 @@ public class FeedbackStreamOne
         return feedbackMessage -> Arrays.stream(feedbackMessage.getFeedback()
                                                                .toLowerCase()
                                                                .split("\\s+"))
-                                        .filter(CommodityStreamUtil.POSITIVE_FEEDBACK_WORDS::contains)
+                                        .filter(Util.POSITIVE_FEEDBACK_WORDS::contains)
                                         .collect(Collectors.toList());
     }
 }

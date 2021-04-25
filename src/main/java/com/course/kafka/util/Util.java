@@ -7,11 +7,12 @@ import org.apache.commons.lang3.StringUtils;
 import java.util.Set;
 
 @UtilityClass
-public class CommodityStreamUtil
+public class Util
 {
     public  final String TOPIC_COMMODITY_ORDER = "t.commodity.order";
     public final int LARGE_QUANTITY_MIN_VALUE = 5;
     public final Set<String> POSITIVE_FEEDBACK_WORDS = Set.of("happy", "good", "helpful");
+    public final Set<String> NEGATIVE_FEEDBACK_WORDS = Set.of("angry", "sad", "bad");
 
     public OrderMessage maskCreditCardNumber(OrderMessage orderMessage)
     {

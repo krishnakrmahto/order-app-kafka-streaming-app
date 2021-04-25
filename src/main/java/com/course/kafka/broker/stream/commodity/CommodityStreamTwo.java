@@ -3,7 +3,7 @@ package com.course.kafka.broker.stream.commodity;
 import com.course.kafka.broker.message.OrderMessage;
 import com.course.kafka.broker.message.OrderMessageForPattern;
 import com.course.kafka.broker.message.OrderMessageForReward;
-import com.course.kafka.util.CommodityStreamUtil;
+import com.course.kafka.util.Util;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
@@ -22,10 +22,10 @@ public class CommodityStreamTwo
     {
         Serde<String> stringSerde = Serdes.String();
 
-        KStream<String, OrderMessage> sourceStream = streamsBuilder.stream(CommodityStreamUtil.TOPIC_COMMODITY_ORDER,
-                                                                     Consumed.with(stringSerde, new JsonSerde<>(OrderMessage.class)));
+        KStream<String, OrderMessage> sourceStream = streamsBuilder.stream(Util.TOPIC_COMMODITY_ORDER,
+                                                                           Consumed.with(stringSerde, new JsonSerde<>(OrderMessage.class)));
 
-        KStream<String, OrderMessage> maskedOrderStream = sourceStream.mapValues(CommodityStreamUtil::maskCreditCardNumber);
+        KStream<String, OrderMessage> maskedOrderStream = sourceStream.mapValues(Util::maskCreditCardNumber);
 
         KStream<String, OrderMessageForPattern>[] patternStreamBranches = maskedOrderStream.mapValues(this::toOrderMessageForPattern)
                                                                                            .branch(getPlasticPredicate(), (key, value) -> true);
@@ -40,7 +40,7 @@ public class CommodityStreamTwo
                                  Produced.with(stringSerde, new JsonSerde<>(OrderMessageForPattern.class)));
 
         // 2. Sink stream - reward
-        maskedOrderStream.filter((key, value) -> value.getQuantity() > CommodityStreamUtil.LARGE_QUANTITY_MIN_VALUE)
+        maskedOrderStream.filter((key, value) -> value.getQuantity() > Util.LARGE_QUANTITY_MIN_VALUE)
                          .filter(getExpensivePredicate())
                          .mapValues(this::toOrderMessageForReward)
                          .to("t.commodity.reward-two", Produced.with(stringSerde, new JsonSerde<>(OrderMessageForReward.class)));
