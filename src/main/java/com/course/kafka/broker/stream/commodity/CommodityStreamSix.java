@@ -11,14 +11,15 @@ import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.*;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.support.KafkaStreamBrancher;
 import org.springframework.kafka.support.serializer.JsonSerde;
 
 import java.util.Base64;
 
-//@Configuration
+@Configuration
 @Slf4j
-public class CommodityStreamFive
+public class CommodityStreamSix
 {
     @Bean
     public KStream<String, OrderMessage> kStreamOrderMessageFour(StreamsBuilder streamsBuilder)
@@ -34,23 +35,26 @@ public class CommodityStreamFive
 
         // 1. Sink streams - pattern
         new KafkaStreamBrancher<String, OrderMessageForPattern>().branch(getPlasticPredicate(),
-                                                                         kStream -> kStream.to("t.commodity.pattern-five.plastic", orderMessageForPatternProducer))
-                                                                 .defaultBranch(kStream -> kStream.to("t.commodity.pattern-five.notplastic", orderMessageForPatternProducer))
+                                                                         kStream -> kStream.to("t.commodity.pattern-six.plastic", orderMessageForPatternProducer))
+                                                                 .defaultBranch(kStream -> kStream.to("t.commodity.pattern-six.notplastic", orderMessageForPatternProducer))
                                                                  .onTopOf(maskedOrderStream.mapValues(this::toOrderMessageForPattern));
 
         // 2. Sink stream - reward
         maskedOrderStream.filter((key, value) -> value.getQuantity() > CommodityStreamUtil.LARGE_QUANTITY_MIN_VALUE)
                          .filter(getExpensivePredicate())
                          .map(getNewKeyValueMapperForRewardStream())
-                         .to("t.commodity.reward-five", Produced.with(stringSerde, new JsonSerde<>(OrderMessageForReward.class)));
+                         .to("t.commodity.reward-six", Produced.with(stringSerde, new JsonSerde<>(OrderMessageForReward.class)));
 
         // 3. Sink stream - storage
         maskedOrderStream.selectKey(getBase64KeyValueMapper())
-                         .to("t.commodity.storage-five", Produced.with(stringSerde, new JsonSerde<>(OrderMessage.class)));
+                         .to("t.commodity.storage-six", Produced.with(stringSerde, new JsonSerde<>(OrderMessage.class)));
 
         // 4. Sink (not a sink stream) - fraud --> not creating a down stream, making an api call to fraud detection app
         maskedOrderStream.filter((key, value) -> value.getOrderLocation().toUpperCase().startsWith("C"))
-                         .foreach(this::reportFraud);
+                         .peek(this::reportFraud)
+                         .map((key, value) -> KeyValue.pair(value.getOrderLocation().charAt(0) + "***",
+                                                            value.getQuantity() * value.getPrice()))
+                         .to("t.commodity.fraud-six", Produced.with(Serdes.String(), Serdes.Integer()));
 
         return sourceStream;
     }
