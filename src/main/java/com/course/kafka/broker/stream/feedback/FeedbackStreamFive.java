@@ -9,13 +9,14 @@ import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KeyValueMapper;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.support.serializer.JsonSerde;
 
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
-//@Configuration
-public class FeedbackStreamFour
+@Configuration
+public class FeedbackStreamFive
 {
     @Bean
     @SuppressWarnings("unchecked")
@@ -30,11 +31,8 @@ public class FeedbackStreamFour
         KStream<String, String> positiveFeedbackWordStream = feedbackWordStream[0];
         KStream<String, String> negativeFeedbackWordStream = feedbackWordStream[1];
 
-        positiveFeedbackWordStream.to("t.commodity.feedback-four-good");
-        negativeFeedbackWordStream.to("t.commodity.feedback-four-bad");
-
-        positiveFeedbackWordStream.groupByKey().count().toStream().to("t.commodity.feedback-four-good-count");
-        negativeFeedbackWordStream.groupByKey().count().toStream().to("t.commodity.feedback-four-bad-count");
+        positiveFeedbackWordStream.through("t.commodity.feedback-five-good").groupByKey().count().toStream().to("t.commodity.feedback-four-good-count");
+        negativeFeedbackWordStream.through("t.commodity.feedback-five-bad").groupByKey().count().toStream().to("t.commodity.feedback-four-good-count");
         
         return sourceStream;
     }
