@@ -9,28 +9,34 @@ import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KeyValueMapper;
 import org.springframework.context.annotation.Bean;
-import org.springframework.kafka.support.KafkaStreamBrancher;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.support.serializer.JsonSerde;
 
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
-//@Configuration
-public class FeedbackStreamThree
+@Configuration
+public class FeedbackStreamFour
 {
     @Bean
+    @SuppressWarnings("unchecked")
     public KStream<String, FeedbackMessage> kStreamFeedbackThree(StreamsBuilder streamsBuilder)
     {
         KStream<String, FeedbackMessage> sourceStream = streamsBuilder.stream("t.commodity.feedback", Consumed.with(Serdes.String(),
                                                                                                      new JsonSerde<>(FeedbackMessage.class)));
 
+        KStream<String, String>[] feedbackWordStream = sourceStream.flatMap(getFeedbackWordsMapper())
+                                                                   .branch((key, value) -> Util.POSITIVE_FEEDBACK_WORDS.contains(value),
+                                                                           (key, value) -> Util.NEGATIVE_FEEDBACK_WORDS.contains(value));
+        KStream<String, String> positiveFeedbackWordStream = feedbackWordStream[0];
+        KStream<String, String> negativeFeedbackWordStream = feedbackWordStream[1];
 
-        new KafkaStreamBrancher<String, String>().branch((key, value) -> Util.POSITIVE_FEEDBACK_WORDS.contains(value),
-                                                         kStream -> kStream.to("t.commodity.feedback-three-good"))
-                                                 .branch((key, value) -> Util.NEGATIVE_FEEDBACK_WORDS.contains(value),
-                                                         kStream -> kStream.to("t.commodity.feedback-three-bad"))
-                                                 .onTopOf(sourceStream.flatMap(getFeedbackWordsMapper()));
+        positiveFeedbackWordStream.to("t.commodity.feedback-four-good");
+        negativeFeedbackWordStream.to("t.commodity.feedback-four-bad");
 
+        positiveFeedbackWordStream.groupByKey().count().toStream().to("t.commodity.feedback-four-good-count");
+        negativeFeedbackWordStream.groupByKey().count().toStream().to("t.commodity.feedback-four-bad-count");
+        
         return sourceStream;
     }
 
