@@ -12,22 +12,32 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.support.serializer.JsonSerde;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.Optional;
+
 @Configuration
-public class FlashSaleStreamOne
+public class FlashSaleVoteStreamTwo
 {
+    private final LocalDateTime voteStartTime = LocalDateTime.of(LocalDate.now(), LocalTime.of(8, 40));
+    private final LocalDateTime voteEndTime = LocalDateTime.of(LocalDate.now(), LocalTime.of(8, 50));
+
     @Bean
     public KStream<String, FlashSaleVoteMessage> kStreamFlashSaleOne(StreamsBuilder streamsBuilder)
     {
         Serde<String> stringSerde = Serdes.String();
         KStream<String, FlashSaleVoteMessage> sourceStream = streamsBuilder.stream("t.commodity.flashsale.vote",
-                                                                                   Consumed.with(stringSerde, new JsonSerde<>(FlashSaleVoteMessage.class)));
+                                                                           Consumed.with(stringSerde, new JsonSerde<>(FlashSaleVoteMessage.class)));
 
-        sourceStream.map((key, value) -> KeyValue.pair(value.getCustomerId(), value.getItemName()))
+        sourceStream.transformValues(() -> new FlashSaleVoteValueTransformer(voteStartTime, voteEndTime))
+                    .filter((key, transformedValue) -> Optional.ofNullable(transformedValue).isPresent())
+                    .map((key, value) -> KeyValue.pair(value.getCustomerId(), value.getItemName()))
                     .to("t.commodity.flashsale.vote-user-item");
 
         streamsBuilder.table("t.commodity.flashsale.vote-user-item", Consumed.with(stringSerde, stringSerde))
                       .groupBy((userId, itemName) -> KeyValue.pair(itemName, itemName)).count().toStream()
-                      .to("t.commodity.flashsale.vote-one-result", Produced.with(stringSerde, Serdes.Long()));
+                      .to("t.commodity.flashsale.vote-two-result", Produced.with(stringSerde, Serdes.Long()));
 
         return sourceStream;
     }
