@@ -32,7 +32,7 @@ public class FeedbackRatingStreamOne
         // this line seems to indicate that every topology should register/add an exclusive state store for itself
         streamsBuilder.addStateStore(storeBuilder);
 
-        sourceStream.transformValues(() -> new FeedbackRatingTransformerOne(stateStoreName))
+        sourceStream.transformValues(() -> new FeedbackRatingTransformerOne(stateStoreName), stateStoreName)
                     .to("t.commodity.feedback.rating-one", Produced.with(stringSerde,
                                                                          new JsonSerde<>(FeedbackAverageRatingMessageOne.class)));
         return sourceStream;

@@ -25,7 +25,8 @@ public class FlashSaleVoteStreamOne
                     .to("t.commodity.flashsale.vote-user-item");
 
         streamsBuilder.table("t.commodity.flashsale.vote-user-item", Consumed.with(stringSerde, stringSerde))
-                      .groupBy((userId, itemName) -> KeyValue.pair(itemName, itemName)).count().toStream()
+                      .groupBy((userId, itemName) -> KeyValue.pair(itemName, itemName))
+                      .count().toStream()
                       .to("t.commodity.flashsale.vote-one-result", Produced.with(stringSerde, Serdes.Long()));
 
         return sourceStream;
