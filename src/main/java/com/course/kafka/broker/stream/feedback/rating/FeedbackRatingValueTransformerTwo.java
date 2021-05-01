@@ -6,6 +6,7 @@ import org.apache.kafka.streams.kstream.ValueTransformer;
 import org.apache.kafka.streams.processor.ProcessorContext;
 import org.apache.kafka.streams.state.KeyValueStore;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -26,15 +27,18 @@ public class FeedbackRatingValueTransformerTwo implements ValueTransformer<Feedb
     @Override
     public FeedbackRatingMessageTwo transform(FeedbackMessage feedbackMessage)
     {
-        FeedbackRatingStateStoreValueTwo stateStoreValue = Optional.ofNullable(
-                ratingCountMapStore.get(feedbackMessage.getLocation()))
+        FeedbackRatingStateStoreValueTwo stateStoreValue = Optional.ofNullable(ratingCountMapStore.get(feedbackMessage.getLocation()))
                                                                    .orElseGet(FeedbackRatingStateStoreValueTwo::new);
 
-        Map<Integer, Long> ratingCountMap = stateStoreValue.getRatingCountMap();
-
         int rating = feedbackMessage.getRating();
-        Long newCountForRating = Optional.ofNullable(ratingCountMap.get(rating)).map(count -> count + 1)
-                                         .orElse(1L);
+        Map<Integer, Long> ratingCountMap = Optional.ofNullable(stateStoreValue.getRatingCountMap())
+                .orElseGet(() -> {
+                    HashMap<Integer, Long> countMap = new HashMap<>();
+                    countMap.put(rating, 0L);
+                    return countMap;
+                });
+
+        Long newCountForRating = Optional.ofNullable(ratingCountMap.get(rating)).orElse(0L) + 1;
         ratingCountMap.put(rating, newCountForRating);
 
         ratingCountMapStore.put(feedbackMessage.getLocation(), new FeedbackRatingStateStoreValueTwo(ratingCountMap));
