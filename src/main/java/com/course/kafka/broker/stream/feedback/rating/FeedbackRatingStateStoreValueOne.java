@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-public class FeedbackRatingStateStoreValue
+public class FeedbackRatingStateStoreValueOne
 {
     private long count;
     private long sumRating;
