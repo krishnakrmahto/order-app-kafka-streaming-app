@@ -9,14 +9,13 @@ import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.Materialized;
 import org.apache.kafka.streams.kstream.Produced;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.support.serializer.JsonSerde;
 
-@Configuration
+//@Configuration
 public class InventoryStreamThree
 {
     @Bean
-    public KStream<String, InventoryMessage> kStreamInventoryTwo(StreamsBuilder streamsBuilder)
+    public KStream<String, InventoryMessage> kStreamInventoryThree(StreamsBuilder streamsBuilder)
     {
         Serde<String> stringSerde = Serdes.String();
         Serde<Long> longSerde = Serdes.Long();
@@ -27,7 +26,7 @@ public class InventoryStreamThree
         sourceStream.mapValues(value -> "ADD".equals(value.getType()) ? value.getQuantity() : -value.getQuantity())
                     .groupByKey()
                     .reduce(Long::sum, Materialized.with(stringSerde, longSerde))
-                    .toStream().to("t.commodity.inventory-total-two", Produced.with(stringSerde, longSerde));
+                    .toStream().to("t.commodity.inventory-total-three", Produced.with(stringSerde, longSerde));
 
         return sourceStream;
     }
