@@ -5,6 +5,9 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.streams.processor.TimestampExtractor;
 import org.springframework.stereotype.Component;
 
+import java.time.ZoneId;
+import java.util.Optional;
+
 @Component
 public class InventoryTimestampExtractor implements TimestampExtractor
 {
@@ -13,6 +16,8 @@ public class InventoryTimestampExtractor implements TimestampExtractor
     {
         InventoryMessage inventoryMessage = (InventoryMessage) record.value();
 
-        return 0;
+        return Optional.ofNullable(inventoryMessage.getTransactionTime())
+                .map(transactionTime -> transactionTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())
+                .orElseGet(record::timestamp);
     }
 }

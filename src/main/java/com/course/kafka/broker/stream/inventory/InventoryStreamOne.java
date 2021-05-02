@@ -24,7 +24,8 @@ public class InventoryStreamOne
         sourceStream.mapValues(InventoryMessage::getQuantity)
                     .groupByKey()
                     .aggregate(() -> 0L, (key, value, aggregate) -> value + aggregate, Materialized.with(stringSerde, Serdes.Long()))
-        .toStream().to("t.commodity.inventory-total-one", Produced.with(stringSerde, Serdes.Long()));
+                    .toStream()
+                    .to("t.commodity.inventory-total-one", Produced.with(stringSerde, Serdes.Long()));
 
         return sourceStream;
     }

@@ -20,7 +20,6 @@ public class InventoryStreamFour
                                                                    InventoryTimestampExtractor timestampExtractor)
     {
         Serde<String> stringSerde = Serdes.String();
-        Serde<Long> longSerde = Serdes.Long();
         JsonSerde<InventoryMessage> inventoryMessageSerde = new JsonSerde<>(InventoryMessage.class);
 
         KStream<String, InventoryMessage> sourceStream = streamsBuilder.stream("t.commodity.inventory",
