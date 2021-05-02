@@ -24,7 +24,7 @@ public class InventoryStreamFive
 
         JsonSerde<InventoryMessage> inventoryMessageSerde = new JsonSerde<>(InventoryMessage.class);
 
-        Duration windowLength = Duration.ofHours(1L);
+        Duration windowLength = Duration.ofHours(1);
 
         KStream<String, InventoryMessage> sourceStream = streamsBuilder.stream("t.commodity.inventory",
                                                                                Consumed.with(stringSerde,
@@ -38,7 +38,9 @@ public class InventoryStreamFive
                     .windowedBy(TimeWindows.of(windowLength))
                     .reduce(Long::sum, Materialized.with(stringSerde, longSerde))
                     .toStream()
-                    .to("t.commodity.inventory-total-five", Produced.with(windowedSerde, longSerde));
+                    .through("t.commodity.inventory-total-five", Produced.with(windowedSerde, longSerde))
+                    .print(Printed.toSysOut());
+
         return sourceStream;
     }
 }
