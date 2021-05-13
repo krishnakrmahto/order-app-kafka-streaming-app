@@ -10,17 +10,19 @@ import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.*;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.support.serializer.JsonSerde;
 
 import java.time.Duration;
+import java.util.Optional;
 
-//@Configuration
-public class OrderPaymentStreamJoinOne
+@Configuration
+public class OrderPaymentStreamJoinTwo
 {
     @Bean
     public KStream<String, OnlineOrderMessage> kStreamOnlineOrder(StreamsBuilder streamsBuilder,
                                                                   OnlineOrderTimestampExtractor orderTimestampExtractor,
-                                                                  OnlinePaymentTimestampExtractor onlinePaymentTimestampExtractor)
+                                                                  OnlinePaymentTimestampExtractor paymentTimestampExtractor)
     {
         Serde<String> stringSerde = Serdes.String();
 
@@ -36,26 +38,33 @@ public class OrderPaymentStreamJoinOne
         KStream<String, OnlinePaymentMessage> paymentStream = streamsBuilder.stream("t.commodity.online-payment",
                                                                                     Consumed.with(stringSerde,
                                                                                                   paymentSerde,
-                                                                                                  onlinePaymentTimestampExtractor,
+                                                                                                  paymentTimestampExtractor,
                                                                                                   null));
-        orderStream.join(paymentStream,
+
+        orderStream.leftJoin(paymentStream,
                          this::orderPaymentJoiner,
                          JoinWindows.of(Duration.ofHours(1)),
                          StreamJoined.with(stringSerde, orderSerde, paymentSerde))
-                   .to("t.commodity.join-order-payment-one", Produced.with(stringSerde, new JsonSerde<>(OnlineOrderPaymentMessage.class)));
+                   .to("t.commodity.join-order-payment-two", Produced
+                           .with(stringSerde, new JsonSerde<>(OnlineOrderPaymentMessage.class)));
 
         return orderStream;
     }
 
     private OnlineOrderPaymentMessage orderPaymentJoiner(OnlineOrderMessage orderMessage, OnlinePaymentMessage paymentMessage)
     {
-        return OnlineOrderPaymentMessage.builder()
-                                .onlineOrderNumber(orderMessage.getOnlineOrderNumber())
-                                .orderDateTime(orderMessage.getOrderDateTime())
-                                .paymentDateTime(paymentMessage.getPaymentDateTime())
-                                .paymentMethod(paymentMessage.getPaymentMethod())
-                                .totalAmount(orderMessage.getTotalAmount())
-                                .username(orderMessage.getUsername())
-                                .build();
+        OnlineOrderPaymentMessage.OnlineOrderPaymentMessageBuilder orderPaymentMessageBuilder =
+                OnlineOrderPaymentMessage.builder()
+                                         .onlineOrderNumber(orderMessage.getOnlineOrderNumber())
+                                         .orderDateTime(orderMessage.getOrderDateTime())
+                                         .totalAmount(orderMessage.getTotalAmount())
+                                         .username(orderMessage.getUsername());
+
+        // right stream can be null in left join, so the nullable check
+        Optional.ofNullable(paymentMessage).ifPresent(message -> orderPaymentMessageBuilder.paymentDateTime(paymentMessage.getPaymentDateTime())
+                                                                                           .paymentMethod(paymentMessage.getPaymentMethod())
+                                                                                           .build());
+
+        return orderPaymentMessageBuilder.build();
     }
 }
