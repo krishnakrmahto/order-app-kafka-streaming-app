@@ -3,12 +3,11 @@ package com.course.kafka.util;
 import com.course.kafka.broker.message.InventoryMessage;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.streams.processor.TimestampExtractor;
-import org.springframework.stereotype.Component;
 
 import java.time.ZoneId;
 import java.util.Optional;
 
-@Component
+//@Component
 public class InventoryTimestampExtractor implements TimestampExtractor
 {
     @Override
