@@ -10,13 +10,17 @@ import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.*;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.support.serializer.JsonSerde;
 
 import java.time.Duration;
 import java.util.Optional;
 
-//@Configuration
-public class OrderPaymentStreamJoinTwo
+import static com.course.kafka.broker.message.OnlineOrderPaymentMessage.OnlineOrderPaymentMessageBuilder;
+import static com.course.kafka.broker.message.OnlineOrderPaymentMessage.builder;
+
+@Configuration
+public class OrderPaymentStreamJoinThree
 {
     @Bean
     public KStream<String, OnlineOrderMessage> kStreamOnlineOrder(StreamsBuilder streamsBuilder,
@@ -40,11 +44,11 @@ public class OrderPaymentStreamJoinTwo
                                                                                                   paymentTimestampExtractor,
                                                                                                   null));
 
-        orderStream.leftJoin(paymentStream,
-                         this::orderPaymentJoiner,
-                         JoinWindows.of(Duration.ofHours(1)),
-                         StreamJoined.with(stringSerde, orderSerde, paymentSerde))
-                   .to("t.commodity.join-order-payment-two", Produced
+        orderStream.outerJoin(paymentStream,
+                             this::orderPaymentJoiner,
+                             JoinWindows.of(Duration.ofHours(1)),
+                             StreamJoined.with(stringSerde, orderSerde, paymentSerde))
+                   .to("t.commodity.join-order-payment-three", Produced
                            .with(stringSerde, new JsonSerde<>(OnlineOrderPaymentMessage.class)));
 
         return orderStream;
@@ -52,14 +56,15 @@ public class OrderPaymentStreamJoinTwo
 
     private OnlineOrderPaymentMessage orderPaymentJoiner(OnlineOrderMessage orderMessage, OnlinePaymentMessage paymentMessage)
     {
-        OnlineOrderPaymentMessage.OnlineOrderPaymentMessageBuilder orderPaymentMessageBuilder =
-                OnlineOrderPaymentMessage.builder()
-                                         .onlineOrderNumber(orderMessage.getOnlineOrderNumber())
-                                         .orderDateTime(orderMessage.getOrderDateTime())
-                                         .totalAmount(orderMessage.getTotalAmount())
-                                         .username(orderMessage.getUsername());
+        OnlineOrderPaymentMessageBuilder orderPaymentMessageBuilder = builder();
 
-        // right stream can be null in left join, so the nullable check
+        // left stream can be null in outer join, so the nullable check
+        Optional.ofNullable(orderMessage).ifPresent(message -> orderPaymentMessageBuilder.onlineOrderNumber(orderMessage.getOnlineOrderNumber())
+                                                                              .orderDateTime(orderMessage.getOrderDateTime())
+                                                                              .totalAmount(orderMessage.getTotalAmount())
+                                                                              .username(orderMessage.getUsername()));
+
+        // right stream can be null in outer join, so the nullable check
         Optional.ofNullable(paymentMessage).ifPresent(message -> orderPaymentMessageBuilder.paymentDateTime(paymentMessage.getPaymentDateTime())
                                                                                            .paymentMethod(paymentMessage.getPaymentMethod())
                                                                                            .build());
