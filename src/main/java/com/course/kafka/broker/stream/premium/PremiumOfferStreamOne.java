@@ -17,7 +17,7 @@ import java.util.List;
 @Configuration
 public class PremiumOfferStreamOne
 {
-    private final List<String> premiumLevels = Arrays.asList("gold", "silver");
+    private final List<String> premiumLevels = Arrays.asList("gold", "diamond");
 
     @Bean
     public KStream<String, PremiumOfferMessage> kStreamPremiumOffer(StreamsBuilder streamsBuilder)
@@ -33,8 +33,7 @@ public class PremiumOfferStreamOne
 
         KTable<String, PremiumUserMessage> premiumUserTable = streamsBuilder.table("t.commodity.premium-user",
                                                                          Consumed.with(stringSerde, premiumUserSerde))
-                                                                  .filter(((key, value) -> premiumLevels
-                                                                          .contains(value.getLevel())));
+                                                                  .filter(((key, value) -> premiumLevels.contains(value.getLevel().toLowerCase())));
 
         KStream<String, PremiumOfferMessage> offerStream = premiumPurchaseStream.join(premiumUserTable, this::joiner,
                                                                                Joined.with(stringSerde,
