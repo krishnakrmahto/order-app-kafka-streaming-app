@@ -8,13 +8,14 @@ import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.*;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.support.serializer.JsonSerde;
 
 import java.util.Arrays;
 import java.util.List;
 
-//@Configuration
-public class PremiumOfferStreamOne
+@Configuration
+public class PremiumOfferStreamTwo
 {
     private final List<String> premiumLevels = Arrays.asList("gold", "diamond");
 
@@ -34,11 +35,11 @@ public class PremiumOfferStreamOne
                                                                          Consumed.with(stringSerde, premiumUserSerde))
                                                                   .filter(((key, value) -> premiumLevels.contains(value.getLevel().toLowerCase())));
 
-        KStream<String, PremiumOfferMessage> offerStream = premiumPurchaseStream.join(premiumUserTable, this::joiner,
+        KStream<String, PremiumOfferMessage> offerStream = premiumPurchaseStream.leftJoin(premiumUserTable, this::joiner,
                                                                                Joined.with(stringSerde,
                                                                                            premiumPurchaseSerde,
                                                                                            premiumUserSerde));
-        offerStream.to("t.commodity.premium-offer-one", Produced.with(stringSerde, offerSerde));
+        offerStream.to("t.commodity.premium-offer-two", Produced.with(stringSerde, offerSerde));
 
         return offerStream;
     }
