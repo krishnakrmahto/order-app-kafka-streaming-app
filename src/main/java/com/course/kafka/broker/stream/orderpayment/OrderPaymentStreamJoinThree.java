@@ -10,16 +10,13 @@ import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.*;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.support.serializer.JsonSerde;
 
 import java.time.Duration;
 import java.util.Optional;
 
-import static com.course.kafka.broker.message.OnlineOrderPaymentMessage.OnlineOrderPaymentMessageBuilder;
-import static com.course.kafka.broker.message.OnlineOrderPaymentMessage.builder;
 
-@Configuration
+//@Configuration
 public class OrderPaymentStreamJoinThree
 {
     @Bean
@@ -56,7 +53,7 @@ public class OrderPaymentStreamJoinThree
 
     private OnlineOrderPaymentMessage orderPaymentJoiner(OnlineOrderMessage orderMessage, OnlinePaymentMessage paymentMessage)
     {
-        OnlineOrderPaymentMessageBuilder orderPaymentMessageBuilder = builder();
+        OnlineOrderPaymentMessage.OnlineOrderPaymentMessageBuilder orderPaymentMessageBuilder = OnlineOrderPaymentMessage.builder();
 
         // left stream can be null in outer join, so the nullable check
         Optional.ofNullable(orderMessage).ifPresent(message -> orderPaymentMessageBuilder.onlineOrderNumber(orderMessage.getOnlineOrderNumber())
