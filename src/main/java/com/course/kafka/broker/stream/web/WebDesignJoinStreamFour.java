@@ -11,10 +11,11 @@ import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.*;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.support.serializer.JsonSerde;
 
-//@Configuration
-public class WebDesignJoinStreamThree
+@Configuration
+public class WebDesignJoinStreamFour
 {
     @Bean
     public KStream<String, WebColorVoteMessage> kStreamWebDesign(StreamsBuilder streamsBuilder,
@@ -30,27 +31,20 @@ public class WebDesignJoinStreamThree
                                                                                           colorVoteSerde,
                                                                                           colorVoteTimestampExtractor,
                                                                                           null));
-        colorVoteSourceStream.mapValues(WebColorVoteMessage::getColor)
-                             .to("t.commodity.web.vote-three-username-color");
+        KTable<String, String> colorTable = colorVoteSourceStream.mapValues(WebColorVoteMessage::getColor)
+                             .toTable();
 
-        KTable<String, String> colorTable = streamsBuilder.table("t.commodity.web.vote-three-username-color",
-                                                            Consumed.with(stringSerde, stringSerde));
-
-        streamsBuilder.stream("t.commodity.web.vote-layout", Consumed.with(stringSerde,
+        KTable<String, String> layoutTable = streamsBuilder.stream("t.commodity.web.vote-layout", Consumed.with(stringSerde,
                                                                            layoutVoteSerde,
                                                                            layoutVoteTimestampExtractor,
                                                                            null))
                       .mapValues(WebLayoutVoteMessage::getLayout)
-                      .to("t.commodity.web.vote-three-username-layout");
-
-        KTable<String, String> layoutTable = streamsBuilder.table("t.commodity.web.vote-three-username-layout",
-                                                                     Consumed.with(stringSerde, stringSerde));
-
+                      .toTable();
 
         // table-table join
-        KTable<String, WebDesignVoteMessage> colorLayoutVoteJoin = colorTable.outerJoin(layoutTable, this::voteJoiner,
+        KTable<String, WebDesignVoteMessage> colorLayoutVoteJoin = colorTable.join(layoutTable, this::voteJoiner,
                                                                                    Materialized.with(stringSerde, new JsonSerde<>(WebDesignVoteMessage.class)));
-        colorLayoutVoteJoin.toStream().to("t.commodity.web.vote-three-result");
+        colorLayoutVoteJoin.toStream().to("t.commodity.web.vote-four-result");
 
         // print vote counts in console (we could put it in another stream as well)
         colorLayoutVoteJoin.groupBy((userName, votedDesign) -> KeyValue.pair(votedDesign.getColor(), votedDesign.getLayout()))
@@ -61,8 +55,6 @@ public class WebDesignJoinStreamThree
 
     private WebDesignVoteMessage voteJoiner(String color, String layout)
     {
-        // we might have to consider and put conditions for possible null values of color and layout (since
-        // this is an outer join), but in our case this makes no difference.
         return new WebDesignVoteMessage(color, layout);
     }
 }
